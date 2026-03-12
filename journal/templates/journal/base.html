@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Журнал успеваемости</title>
+
+<link rel="stylesheet" href="/static/css/style.css">
+
+</head>
+
+<body>
+
+<!-- TOP NAVBAR -->
+
+<header class="navbar">
+
+<div class="logo">
+Журнал
+</div>
+
+<nav class="nav-links">
+
+<a href="/">Оценки</a>
+<a href="/journal/">Журнал</a>
+<a href="/admin/">Админка</a>
+
+</nav>
+
+<div class="menu-toggle">
+☰
+</div>
+
+</header>
+
+
+<!-- PAGE -->
+
+<main class="container">
+
+{% block content %}
+{% endblock %}
+
+</main>
+
+<script src="/static/js/app.js"></script>
+
+</body>
+</html>

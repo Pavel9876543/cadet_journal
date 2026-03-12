@@ -1,0 +1,25 @@
+
+{% extends "journal/base.html" %}
+
+{% block content %}
+<h2>Список оценок</h2>
+
+<table>
+<tr>
+<th>Курсант</th>
+<th>Предмет</th>
+<th>Оценка</th>
+<th>Дата</th>
+</tr>
+
+{% for g in grades %}
+<tr>
+<td>{{ g.cadet }}</td>
+<td>{{ g.subject }}</td>
+<td>{{ g.value }}</td>
+<td>{{ g.date }}</td>
+</tr>
+{% endfor %}
+
+</table>
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends "journal/base.html" %}
+
+{% block content %}
+
+<div class="card">
+
+<h2>Журнал</h2>
+
+<form method="get" id="filterForm" class="filters">
+
+<select name="group" onchange="this.form.submit()">
+
+{% for g in groups %}
+
+<option value="{{ g.id }}"
+{% if g.id == group_id %}selected{% endif %}>
+
+{{ g.name }}
+
+</option>
+
+{% endfor %}
+
+</select>
+
+
+<select name="subject" onchange="this.form.submit()">
+
+{% for s in subjects %}
+
+<option value="{{ s.id }}"
+{% if s.id == subject_id %}selected{% endif %}>
+
+{{ s.name }}
+
+</option>
+
+{% endfor %}
+
+</select>
+
+</form>
+
+
+<form method="post" action="/save_journal/">
+
+{% csrf_token %}
+
+<input type="hidden" name="subject_id" value="{{ subject_id }}">
+
+<h3 class="journal-year">
+{{ dates.0|date:"Y" }}
+</h3>
+
+<div class="table-wrapper">
+
+<table>
+
+<tr>
+
+<th>Курсант</th>
+
+{% for date in dates %}
+
+<th>{{ date|date:"d.m" }}</th>
+
+{% endfor %}
+
+</tr>
+
+{% for cadet,row in journal.items %}
+
+<tr>
+
+<td>{{ cadet }}</td>
+
+{% for date,value in row.items %}
+
+<td>
+
+<input
+type="text"
+name="grade_{{ cadet.id }}_{{ date }}"
+value="{{ value }}"
+class="grade-input"
+maxlength="3"
+>
+
+</td>
+
+{% endfor %}
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+<br>
+
+<button class="btn">Сохранить оценки</button>
+
+</form>
+
+</div>
+
+{% endblock %}
