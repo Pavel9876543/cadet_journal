@@ -1,4 +1,5 @@
 {% extends "journal/base.html" %}
+{% load journal_tags %}
 
 {% block content %}
 
@@ -6,104 +7,93 @@
 
 <h2>Журнал</h2>
 
+<!-- ФИЛЬТРЫ -->
 <form method="get" id="filterForm" class="filters">
 
-<select name="group" onchange="this.form.submit()">
-
-{% for g in groups %}
-
-<option value="{{ g.id }}"
-{% if g.id == group_id %}selected{% endif %}>
-
-{{ g.name }}
-
-</option>
-
-{% endfor %}
-
+<label>Группа</label>
+<select name="group" id="groupSelect">
+    {% for g in groups %}
+        <option value="{{ g.id }}"
+            {% if group_id == g.id|stringformat:"s" %}
+                selected
+            {% endif %}
+        >
+            {{ g.name }}
+        </option>
+    {% endfor %}
 </select>
 
 
-<select name="subject" onchange="this.form.submit()">
-
-{% for s in subjects %}
-
-<option value="{{ s.id }}"
-{% if s.id == subject_id %}selected{% endif %}>
-
-{{ s.name }}
-
-</option>
-
-{% endfor %}
-
+<label>Предмет</label>
+<select name="subject" id="subjectSelect">
+    {% for s in subjects %}
+        <option value="{{ s.id }}"
+            {% if subject_id == s.id|stringformat:"s" %}
+                selected
+            {% endif %}
+        >
+            {{ s.name }}
+        </option>
+    {% endfor %}
 </select>
 
 </form>
 
 
-<form method="post" action="/save_journal/">
-
-{% csrf_token %}
-
-<input type="hidden" name="subject_id" value="{{ subject_id }}">
-
+<!-- ГОД -->
+{% if lessons %}
 <h3 class="journal-year">
-{{ dates.0|date:"Y" }}
+    {{ lessons.0.date|date:"Y" }}
 </h3>
+{% endif %}
 
-<div class="table-wrapper">
+
+<!-- ЖУРНАЛ -->
+<div class="journal-table">
 
 <table>
 
 <tr>
-
 <th>Курсант</th>
 
-{% for date in dates %}
-
-<th>{{ date|date:"d.m" }}</th>
-
+{% for lesson in lessons %}
+<th>{{ lesson.date|date:"d.m" }}</th>
 {% endfor %}
 
 </tr>
 
-{% for cadet,row in journal.items %}
-
+{% for cadet in cadets %}
 <tr>
 
 <td>{{ cadet }}</td>
 
-{% for date,value in row.items %}
-
+{% for lesson in lessons %}
 <td>
 
 <input
-type="text"
-name="grade_{{ cadet.id }}_{{ date }}"
-value="{{ value }}"
 class="grade-input"
+data-cadet="{{ cadet.id }}"
+data-lesson="{{ lesson.id }}"
+value="{{ journal|get_item:cadet.id|get_item:lesson.id }}"
 maxlength="3"
->
+/>
 
 </td>
-
 {% endfor %}
 
 </tr>
-
 {% endfor %}
 
 </table>
 
 </div>
 
-<br>
-
-<button class="btn">Сохранить оценки</button>
-
-</form>
-
 </div>
+
+
+<!-- ДАННЫЕ ДЛЯ JS -->
+<script>
+window.subjectGroups = {{ subject_groups|safe }};
+</script>
 
 {% endblock %}

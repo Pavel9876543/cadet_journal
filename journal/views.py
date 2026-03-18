@@ -1,6 +1,10 @@
+import json
+from collections import defaultdict
 
 from django.shortcuts import render, redirect
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from django.http import JsonResponse
 from .models import *
 
 from datetime import datetime
@@ -16,67 +20,81 @@ def grade_list(request):
     return render(request,"journal/grade_list.html",{"grades":grades})
 
 def journal_table(request):
+    """
+    Журнал: строки — курсанты, колонки — даты (Lesson)
+    """
 
-    group_id=request.GET.get("group")
-    subject_id=request.GET.get("subject")
+    group_id = request.GET.get("group")
+    subject_id = request.GET.get("subject")
 
-    cadets=[]
-    dates=[]
-    journal={}
+    groups = Group.objects.all()
+    subjects = Subject.objects.all()
 
-    # если не выбрано — берем первые
-    if not group_id:
-        group = Group.objects.first()
-        if group:
-            group_id = group.id
+    # дефолты
+    if not subject_id and subjects.exists():
+        subject_id = str(subjects.first().id)
 
-    if not subject_id:
-        subject = Subject.objects.first()
-        if subject:
-            subject_id = subject.id
+    allowed_groups = []
 
-    if group_id and subject_id:
-        cadets=Cadet.objects.filter(group_id=group_id)
-        grades=Grade.objects.filter(cadet__group_id=group_id,subject_id=subject_id)
-        dates=sorted(list(set(grades.values_list("date",flat=True))))
+    if subject_id:
+        allowed_groups = list(
+            SubjectGroup.objects.filter(subject_id=subject_id)
+            .values_list("group_id", flat=True)
+        )
 
-        for cadet in cadets:
-            journal[cadet]={}
-            for date in dates:
-                grade=grades.filter(cadet=cadet,date=date).first()
-                journal[cadet][date]=grade.value if grade else ""
+    if not group_id and allowed_groups:
+        group_id = str(allowed_groups[0])
 
-    context={
-    "groups":Group.objects.all(),
-    "subjects":Subject.objects.all(),
-    "cadets":cadets,
-    "dates":dates,
-    "journal":journal,
-    "subject_id":subject_id
+    # курсанты
+    cadets = Cadet.objects.filter(group_id=group_id).order_by("last_name")
+
+    # занятия
+    lessons = Lesson.objects.filter(
+        subject_id=subject_id,
+        group_id=group_id
+    ).order_by("date")
+
+    # оценки
+    grades = Grade.objects.filter(lesson__in=lessons)
+
+    journal = defaultdict(dict)
+
+    for grade in grades:
+        journal[grade.cadet_id][grade.lesson_id] = grade.value
+
+    context = {
+        "groups": groups,
+        "subjects": subjects,
+        "cadets": cadets,
+        "lessons": lessons,
+        "journal": journal,
+        "subject_id": subject_id,
+        "group_id": group_id,
     }
 
-    return render(request,"journal/journal_table.html",context)
+    return render(request, "journal/journal_table.html", context)
 
 @require_POST
-def save_journal(request):
-    subject_id=request.POST.get("subject_id")
+@csrf_exempt
+def save_grade(request):
+    """
+    Сохраняет оценку из ячейки (AJAX)
+    """
 
-    for key,value in request.POST.items():
+    if request.method == "POST":
 
-        if key.startswith("grade_") and value:
+        data = json.loads(request.body)
 
-            parts=key.split("_")
+        cadet_id = data.get("cadet_id")
+        lesson_id = data.get("lesson_id")
+        value = data.get("value")
 
-            cadet_id=parts[1]
-            s = parts[2].replace(" г.", "")
-            day, month, year = s.split()
-            date = datetime(int(year), months[month], int(day))
-
-            Grade.objects.update_or_create(
+        grade, created = Grade.objects.get_or_create(
             cadet_id=cadet_id,
-            subject_id=subject_id,
-            date=date,
-            defaults={"teacher_id":1,"value":value}
-            )
+            lesson_id=lesson_id,
+        )
 
-    return redirect(request.META.get("HTTP_REFERER","/"))
+        grade.value = value
+        grade.save()
+
+        return JsonResponse({"status": "ok"})
