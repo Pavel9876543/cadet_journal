@@ -4,17 +4,18 @@
 Функции:
 - навигация по ячейкам (Enter)
 - фильтрация журнала
-- AJAX сохранение оценок
+- пакетное сохранение оценок
+- валидация + подсветка
 - мобильное меню
 */
 
 document.addEventListener("DOMContentLoaded", () => {
 
     /* ========================= */
-    /* НАВИГАЦИЯ ПО ЯЧЕЙКАМ */
+    /* НАВИГАЦИЯ (ENTER) */
     /* ========================= */
 
-    const inputs = document.querySelectorAll(".grade-input");
+    const inputs = Array.from(document.querySelectorAll(".grade-input"));
 
     inputs.forEach((input, index) => {
 
@@ -24,11 +25,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 e.preventDefault();
 
-                let next = inputs[index + 1];
-
-                if (next) {
-                    next.focus();
-                }
+                const next = inputs[index + 1];
+                if (next) next.focus();
 
             }
 
@@ -38,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* ========================= */
-    /* ФИЛЬТРЫ ЖУРНАЛА */
+    /* ФИЛЬТРЫ */
     /* ========================= */
 
     const form = document.getElementById("filterForm");
@@ -70,9 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             });
 
-            // если выбранная группа недоступна
             if (!hasSelected) {
-
                 for (let option of groupSelect.options) {
                     if (option.style.display !== "none") {
                         groupSelect.value = option.value;
@@ -96,37 +92,116 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* ========================= */
-    /* AJAX СОХРАНЕНИЕ ОЦЕНОК */
-    /* ========================= */
+    /* СОХРАНЕНИЕ */
+/* ========================= */
 
-    document.querySelectorAll(".grade-input").forEach(input => {
+let changedGrades = {};
 
-        input.addEventListener("change", function () {
+// отслеживание изменений
+document.querySelectorAll(".grade-input").forEach(input => {
 
-            const cadetId = this.dataset.cadet;
-            const lessonId = this.dataset.lesson;
-            const value = this.value;
+    const handler = function () {
 
-            fetch("/save-grade/", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": getCookie("csrftoken")
-                },
-                body: JSON.stringify({
-                    cadet_id: cadetId,
-                    lesson_id: lessonId,
-                    value: value
-                })
-            })
-            .then(res => res.json())
-            .then(() => {
-                this.style.background = "#dcfce7";
-            });
+        const cadetId = this.dataset.cadet;
+        const lessonId = this.dataset.lesson;
+        const key = cadetId + "_" + lessonId;
 
-        });
+        changedGrades[key] = {
+            cadet_id: cadetId,
+            lesson_id: lessonId,
+            value: this.value
+        };
 
+        this.classList.remove("saved", "error");
+        this.classList.add("changed");
+    };
+
+    input.addEventListener("input", handler);
+    input.addEventListener("change", handler); // 🔥 для select
+
+});
+
+
+const saveBtn = document.getElementById("saveBtn");
+
+if (saveBtn) {
+
+    saveBtn.addEventListener("click", async () => {
+
+        if (Object.keys(changedGrades).length === 0) {
+            alert("Нет изменений");
+            return;
+        }
+
+        let hasError = false;
+
+        // 🧪 ВАЛИДАЦИЯ
+        for (let key in changedGrades) {
+
+            let item = changedGrades[key];
+            let val = item.value;
+
+            const input = document.querySelector(
+                `.grade-input[data-cadet="${item.cadet_id}"][data-lesson="${item.lesson_id}"]`
+            );
+
+            input.classList.remove("error");
+
+            if (val === "") continue;
+
+            const validValues = [
+            "2", "3", "4", "5",
+            "2-", "3-", "4-", "5+",
+            "зачет", "незачет", "_",
+            ];
+
+            if (!validValues.includes(val) && val !== "") {
+                input.classList.add("error");
+                hasError = true;
+            }
+
+        }
+
+        if (hasError) {
+            alert("Исправьте ошибки (оценки 2–5)");
+            return;
+        }
+
+        // 💾 СОХРАНЕНИЕ
+        for (let key in changedGrades) {
+
+            const item = changedGrades[key];
+
+            try {
+
+                await fetch("/save-grade/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCookie("csrftoken")
+                    },
+                    body: JSON.stringify(item)
+                });
+
+                const input = document.querySelector(
+                    `.grade-input[data-cadet="${item.cadet_id}"][data-lesson="${item.lesson_id}"]`
+                );
+
+                input.classList.remove("changed");
+                input.classList.add("saved");
+
+            } catch (e) {
+                alert("Ошибка сети");
+                return;
+            }
+
+        }
+
+        alert("Сохранено ✅");
+        changedGrades = {};
     });
+
+}
 
 
     /* ========================= */

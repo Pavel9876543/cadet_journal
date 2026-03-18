@@ -30,20 +30,20 @@ body {
     font-weight: 600;
 }
 
-.menu a {
+.nav-links a {
     color: #e5e7eb;
     text-decoration: none;
     margin-left: 25px;
     font-size: 15px;
 }
 
-.menu a:hover {
+.nav-links a:hover {
     color: white;
 }
 
 
 /* ============================= */
-/* КОНТЕЙНЕР (ПК!) */
+/* КОНТЕЙНЕР */
 /* ============================= */
 
 .container {
@@ -55,9 +55,20 @@ body {
     background: white;
     padding: 35px;
 
-    border-radius: 12px;
+    border-radius: 14px;
 
     box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+
+/* ============================= */
+/* КАРТОЧКА */
+/* ============================= */
+
+.card {
+    background: white;
+    border-radius: 14px;
+    padding: 30px;
 }
 
 
@@ -68,6 +79,34 @@ body {
 h2 {
     margin-top: 0;
     font-size: 24px;
+}
+
+.journal-year {
+    margin-top: 10px;
+    font-size: 18px;
+    color: #374151;
+}
+
+
+/* ============================= */
+/* ФИЛЬТРЫ */
+/* ============================= */
+
+.filters {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.filters label {
+    margin: 0;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.filters select {
+    min-width: 180px;
 }
 
 
@@ -88,38 +127,89 @@ th {
     padding: 14px;
     font-weight: 500;
 
-    text-align: left;
+    text-align: center;
 }
 
 td {
-    padding: 14px;
+    padding: 12px;
     border-bottom: 1px solid #e5e7eb;
+    text-align: center;
 }
 
-tr:hover {
+tr:hover td {
     background: #f9fafb;
 }
 
 
 /* ============================= */
-/* ЖУРНАЛ (ВАЖНО) */
+/* ЖУРНАЛ */
 /* ============================= */
 
 .journal-table {
-    overflow-x: auto;
+    overflow: auto;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
 }
 
 .journal-table table {
     min-width: 900px;
 }
 
-.journal-table td {
-    text-align: center;
-    font-weight: 500;
+/* фикс шапки */
+.journal-table th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
 }
 
-.journal-table th {
+/* фикс первой колонки */
+.journal-table td:first-child,
+.journal-table th:first-child {
+    position: sticky;
+    left: 0;
+    background: white;
+    z-index: 3;
+    text-align: left;
+    font-weight: 600;
+}
+
+
+/* ============================= */
+/* INPUT (ОЦЕНКИ) */
+/* ============================= */
+
+.grade-input {
+    width: 55px;
     text-align: center;
+
+    border: none;
+    background: transparent;
+
+    font-weight: 600;
+    font-size: 14px;
+
+    border-radius: 6px;
+    padding: 6px;
+}
+
+.grade-input:focus {
+    outline: none;
+    background: #eff6ff;
+    box-shadow: 0 0 0 2px #3b82f6;
+}
+
+
+/* состояния */
+.grade-input.changed {
+    background: #fef3c7;
+}
+
+.grade-input.saved {
+    background: #dcfce7;
+}
+
+.grade-input.error {
+    background: #fee2e2;
 }
 
 
@@ -129,12 +219,6 @@ tr:hover {
 
 form {
     margin-top: 20px;
-}
-
-label {
-    display: block;
-    margin-top: 15px;
-    font-weight: 500;
 }
 
 input, select {
@@ -163,24 +247,26 @@ input:focus, select:focus {
 button {
     margin-top: 20px;
 
-    background: #2563eb;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
     color: white;
 
     border: none;
 
     padding: 12px 20px;
 
-    border-radius: 8px;
+    border-radius: 10px;
 
     font-size: 14px;
+    font-weight: 500;
 
     cursor: pointer;
 
-    transition: 0.2s;
+    transition: all 0.2s ease;
 }
 
 button:hover {
-    background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.3);
 }
 
 
@@ -198,7 +284,20 @@ a:hover {
 
 
 /* ============================= */
-/* ПК ФИЧИ */
+/* ТАБЛИЦА ОЦЕНОК */
+/* ============================= */
+
+.grade-table {
+    width: 100%;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+
+/* ============================= */
+/* ПК */
 /* ============================= */
 
 @media (min-width: 1200px) {
@@ -213,46 +312,40 @@ a:hover {
 
 }
 
+
 /* ============================= */
-/* MOBILE (до 768px) */
+/* MOBILE */
 /* ============================= */
 
 @media (max-width: 768px) {
 
-    /* NAVBAR */
     .navbar {
         flex-direction: column;
         align-items: flex-start;
         padding: 15px 20px;
     }
 
-    .menu {
+    .nav-links {
         margin-top: 10px;
         display: flex;
         flex-wrap: wrap;
     }
 
-    .menu a {
+    .nav-links a {
         margin: 5px 10px 0 0;
         font-size: 14px;
     }
 
-
-    /* КОНТЕЙНЕР */
     .container {
         width: 95%;
         margin: 20px auto;
         padding: 20px;
     }
 
-
-    /* ЗАГОЛОВКИ */
     h2 {
         font-size: 20px;
     }
 
-
-    /* ТАБЛИЦЫ */
     table {
         font-size: 13px;
     }
@@ -261,28 +354,30 @@ a:hover {
         padding: 8px;
     }
 
-
-    /* ЖУРНАЛ */
-    .journal-table {
-        overflow-x: auto;
-    }
-
     .journal-table table {
-        min-width: 600px;
+        min-width: 500px;
     }
 
+    .grade-input {
+        width: 45px;
+        font-size: 13px;
+    }
 
-    /* ФОРМЫ */
     input, select {
         max-width: 100%;
-        font-size: 14px;
     }
 
-
-    /* КНОПКИ */
     button {
         width: 100%;
-        padding: 12px;
     }
 
+}
+
+.grade-input select,
+select.grade-input {
+    width: 100%;
+    padding: 6px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    font-size: 14px;
 }

@@ -30,10 +30,18 @@ def journal_table(request):
     groups = Group.objects.all()
     subjects = Subject.objects.all()
 
-    # дефолты
-    if not subject_id and subjects.exists():
-        subject_id = str(subjects.first().id)
+    # приведение типов
+    if group_id:
+        group_id = int(group_id)
 
+    if subject_id:
+        subject_id = int(subject_id)
+
+    # дефолт предмет
+    if not subject_id and subjects.exists():
+        subject_id = subjects.first().id
+
+    # доступные группы
     allowed_groups = []
 
     if subject_id:
@@ -42,8 +50,9 @@ def journal_table(request):
             .values_list("group_id", flat=True)
         )
 
+    # дефолт группа
     if not group_id and allowed_groups:
-        group_id = str(allowed_groups[0])
+        group_id = allowed_groups[0]
 
     # курсанты
     cadets = Cadet.objects.filter(group_id=group_id).order_by("last_name")
@@ -62,6 +71,12 @@ def journal_table(request):
     for grade in grades:
         journal[grade.cadet_id][grade.lesson_id] = grade.value
 
+    # 🔥 для JS (обязательно!)
+    subject_groups = {}
+
+    for sg in SubjectGroup.objects.all():
+        subject_groups.setdefault(str(sg.subject_id), []).append(sg.group_id)
+
     context = {
         "groups": groups,
         "subjects": subjects,
@@ -70,31 +85,47 @@ def journal_table(request):
         "journal": journal,
         "subject_id": subject_id,
         "group_id": group_id,
+        "subject_groups": subject_groups,
     }
 
     return render(request, "journal/journal_table.html", context)
 
 @require_POST
-@csrf_exempt
 def save_grade(request):
     """
-    Сохраняет оценку из ячейки (AJAX)
+    Сохраняет оценку (строку!)
     """
 
-    if request.method == "POST":
-
+    try:
         data = json.loads(request.body)
 
         cadet_id = data.get("cadet_id")
         lesson_id = data.get("lesson_id")
         value = data.get("value")
 
-        grade, created = Grade.objects.get_or_create(
+        if value:
+            value = value.strip()
+        else:
+            value = "_"
+
+        # защита
+        if not cadet_id or not lesson_id:
+            return JsonResponse({"error": "Invalid data"}, status=400)
+
+        # обработка значения
+        if value is None or value.strip() == "":
+            value = None
+        else:
+            value = value.strip()  # строка, НЕ int
+
+        # сохранение
+        Grade.objects.update_or_create(
             cadet_id=cadet_id,
             lesson_id=lesson_id,
+            defaults={"value": value}
         )
 
-        grade.value = value
-        grade.save()
-
         return JsonResponse({"status": "ok"})
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)

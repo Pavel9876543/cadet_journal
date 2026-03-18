@@ -2,53 +2,37 @@
 <html lang="ru">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Журнал успеваемости</title>
 
-<title>Журнал успеваемости</title>
-
-<link rel="stylesheet" href="/static/css/style.css">
-
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
-
-<script src="/static/js/app.js"></script>
 
 <body>
 
-<!-- TOP NAVBAR -->
-
 <header class="navbar">
 
-<div class="logo">
-Журнал
-</div>
+    <div class="logo">Журнал</div>
 
-<nav class="nav-links">
+    <nav class="nav-links">
+        <a href="/">Оценки</a>
+        <a href="/journal/">Журнал</a>
+        <a href="/admin/">Админка</a>
+    </nav>
 
-<a href="/">Оценки</a>
-<a href="/journal/">Журнал</a>
-<a href="/admin/">Админка</a>
-
-</nav>
-
-<div class="menu-toggle">
-☰
-</div>
+    <div class="menu-toggle">☰</div>
 
 </header>
 
-
-<!-- PAGE -->
-
 <main class="container">
-
-{% block content %}
-{% endblock %}
-
+    {% block content %}
+    {% endblock %}
 </main>
 
-<script src="/static/js/app.js"></script>
+<script src="{% static 'js/app.js' %}"></script>
 
 </body>
 </html>
