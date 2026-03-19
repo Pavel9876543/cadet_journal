@@ -5,133 +5,175 @@
 
 <div class="card">
 
-    <h2>Журнал</h2>
+<h2>Журнал</h2>
 
-    <!-- ФИЛЬТРЫ -->
-    <form method="get" id="filterForm" class="filters">
+<!-- ========================= -->
+<!-- ФИЛЬТРЫ -->
+<!-- ========================= -->
 
-        <label>Группа</label>
-        <select name="group" id="groupSelect">
-            {% for g in groups %}
-                <option value="{{ g.id }}"
-                    {% if group_id == g.id %}
-                        selected
-                    {% endif %}
-                >
-                    {{ g.name }}
-                </option>
-            {% endfor %}
-        </select>
+<form method="get" id="filterForm" class="filters">
 
-        <label>Предмет</label>
-        <select name="subject" id="subjectSelect">
-            {% for s in subjects %}
-                <option value="{{ s.id }}"
-                    {% if subject_id == s.id %}
-                        selected
-                    {% endif %}
-                >
-                    {{ s.name }}
-                </option>
-            {% endfor %}
-        </select>
+<label>Группа</label>
+<select name="group" id="groupSelect">
+    {% for g in groups %}
+        <option value="{{ g.id }}"
+            {% if group_id == g.id|stringformat:"s" %}selected{% endif %}
+        >
+            {{ g.name }}
+        </option>
+    {% endfor %}
+</select>
 
-    </form>
+<label>Предмет</label>
+<select name="subject" id="subjectSelect">
+    {% for s in subjects %}
+        <option value="{{ s.id }}"
+            {% if subject_id == s.id|stringformat:"s" %}selected{% endif %}
+        >
+            {{ s.name }}
+        </option>
+    {% endfor %}
+</select>
 
-    <!-- ГОД -->
-    {% if lessons %}
-        <h3 class="journal-year">
-            {{ lessons.0.date|date:"Y" }}
-        </h3>
-    {% endif %}
+</form>
 
-    <!-- ЖУРНАЛ -->
-    <div class="journal-table">
 
-        <table>
+<!-- ========================= -->
+<!-- ГОД -->
+<!-- ========================= -->
 
-            <tr>
-                <th>Курсант</th>
+{% if lessons %}
+<h3 class="journal-year">
+    {{ lessons.0.date|date:"Y" }}
+</h3>
+{% endif %}
 
-                {% for lesson in lessons %}
-                    <th>{{ lesson.date|date:"d.m" }}</th>
-                {% endfor %}
-            </tr>
 
-            {% for cadet in cadets %}
-            <tr>
+<!-- ========================= -->
+<!-- ТАБЛИЦА -->
+<!-- ========================= -->
 
-                <td>{{ cadet }}</td>
+<div class="journal-table">
 
-                {% for lesson in lessons %}
-                <td>
+<table>
 
-                    {% if lesson.subject.type == "pass_fail" %}
+<tr>
+<th>Курсант</th>
 
-                        <select
-                            class="grade-input"
-                            data-cadet="{{ cadet.id }}"
-                            data-lesson="{{ lesson.id }}"
-                        >
-                            <option value="_"
-                            {% if journal|get_item:cadet.id|get_item:lesson.id == "_" %}
-                                selected
-                            {% endif %}
-                            >—</option>
+{% for lesson in lessons %}
+<th>{{ lesson.date|date:"d.m" }}</th>
+{% endfor %}
 
-                            <option value="зачет"
-                                {% if journal|get_item:cadet.id|get_item:lesson.id == "зачет" %}
-                                    selected
-                                {% endif %}
-                            >
-                                Зачёт
-                            </option>
+<th>Средний</th>
+<th>Экзамен</th>
+<th>Итог</th>
 
-                            <option value="незачет"
-                                {% if journal|get_item:cadet.id|get_item:lesson.id == "незачет" %}
-                                    selected
-                                {% endif %}
-                            >
-                                Незачёт
-                            </option>
+</tr>
 
-                        </select>
+{% for cadet in cadets %}
+<tr>
 
-                    {% else %}
+<td>{{ cadet }}</td>
 
-                        <input
-                            type="text"
-                            inputmode="numeric"
-                            class="grade-input"
-                            data-cadet="{{ cadet.id }}"
-                            data-lesson="{{ lesson.id }}"
-                            value="{{ journal|get_item:cadet.id|get_item:lesson.id|default:'' }}"
-                        />
+{% for lesson in lessons %}
+<td>
 
-                    {% endif %}
+<input
+class="grade-input"
+data-cadet="{{ cadet.id }}"
+data-lesson="{{ lesson.id }}"
+value="{{ journal|get_item:cadet.id|get_item:lesson.id|default:'' }}"
+maxlength="5"
+/>
 
-                </td>
-                {% endfor %}
+</td>
+{% endfor %}
 
-            </tr>
-            {% endfor %}
+<!-- ========================= -->
+<!-- СРЕДНИЙ -->
+<!-- ========================= -->
 
-        </table>
+<td>
+    {{ averages|get_item:cadet.id|default:"—" }}
+</td>
 
-    </div>
 
-    <!-- КНОПКА -->
-    <div style="margin-top: 20px;">
-        <button type="button" id="saveBtn" class="btn-save">
-            Сохранить
-        </button>
-    </div>
+<!-- ========================= -->
+<!-- ЭКЗАМЕН -->
+<!-- ========================= -->
+
+<td>
+<input
+class="exam-input"
+data-cadet="{{ cadet.id }}"
+data-subject="{{ subject_id }}"
+value="{{ results|get_item:cadet.id.exam|default:'' }}"
+/>
+</td>
+
+
+<!-- ========================= -->
+<!-- ИТОГ -->
+<!-- ========================= -->
+
+<td>
+<input
+class="final-input"
+data-cadet="{{ cadet.id }}"
+data-subject="{{ subject_id }}"
+value="{{ results|get_item:cadet.id.final|default:'' }}"
+/>
+</td>
+
+</tr>
+{% endfor %}
+
+</table>
 
 </div>
 
-<!-- ДАННЫЕ ДЛЯ JS -->
+</div>
+
+
+<!-- ========================= -->
+<!-- MOBILE VERSION -->
+<!-- ========================= -->
+
+<div class="mobile-journal">
+
+{% for cadet in cadets %}
+<div class="mobile-card">
+
+<h4>{{ cadet }}</h4>
+
+<div class="mobile-grades">
+
+{% for lesson in lessons %}
+    {% with val=journal|get_item:cadet.id|get_item:lesson.id %}
+        <div class="mobile-grade" data-value="{{ val }}">
+            {{ val|default:"_" }}
+        </div>
+    {% endwith %}
+{% endfor %}
+
+</div>
+
+<div class="mobile-extra">
+    <div>Средний: {{ averages|get_item:cadet.id|default:"—" }}</div>
+</div>
+
+</div>
+{% endfor %}
+
+</div>
+
+
+<!-- ========================= -->
+<!-- JS DATA -->
+<!-- ========================= -->
+
 <script>
-    window.subjectGroups = {{ subject_groups|safe }};
+window.subjectGroups = {{ subject_groups|safe }};
 </script>
 
 {% endblock %}

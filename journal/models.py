@@ -1,6 +1,5 @@
 """
-Модели системы учета успеваемости курсантов.
-Нормализованная структура (production-ready).
+Модели системы электронного журнала (production-ready).
 """
 
 from django.db import models
@@ -12,10 +11,6 @@ from django.contrib.auth.models import User
 # =========================
 
 class Group(models.Model):
-    """
-    Учебная группа.
-    Пример: 1а, 2б
-    """
     name = models.CharField(max_length=10, unique=True)
 
     def __str__(self):
@@ -27,16 +22,13 @@ class Group(models.Model):
 # =========================
 
 class Cadet(models.Model):
-    """
-    Курсант.
-    """
 
-    last_name = models.CharField("Фамилия", max_length=100)
-    first_name = models.CharField("Имя", max_length=100)
-    middle_name = models.CharField("Отчество", max_length=100, blank=True)
+    last_name = models.CharField(max_length=100)
+    first_name = models.CharField(max_length=100)
+    middle_name = models.CharField(max_length=100, blank=True)
 
-    birth_date = models.DateField("Дата рождения")
-    phone = models.CharField("Телефон", max_length=20)
+    birth_date = models.DateField()
+    phone = models.CharField(max_length=20)
 
     group = models.ForeignKey(
         Group,
@@ -61,9 +53,6 @@ class Cadet(models.Model):
 # =========================
 
 class Teacher(models.Model):
-    """
-    Преподаватель.
-    """
 
     last_name = models.CharField(max_length=100)
     first_name = models.CharField(max_length=100)
@@ -85,9 +74,6 @@ class Teacher(models.Model):
 # =========================
 
 class Subject(models.Model):
-    """
-    Учебный предмет.
-    """
 
     GRADE = "grade"
     PASS_FAIL = "pass_fail"
@@ -97,17 +83,17 @@ class Subject(models.Model):
         (PASS_FAIL, "Зачет/Незачет"),
     ]
 
-    name = models.CharField("Название", max_length=200)
+    name = models.CharField(max_length=200)
 
     type = models.CharField(
-        "Тип оценки",
         max_length=20,
         choices=TYPE_CHOICES
     )
 
     teachers = models.ManyToManyField(
         Teacher,
-        related_name="subjects"
+        related_name="subjects",
+        blank=True
     )
 
     def __str__(self):
@@ -115,14 +101,10 @@ class Subject(models.Model):
 
 
 # =========================
-# СВЯЗЬ ПРЕДМЕТ ↔ ГРУППА
+# СВЯЗЬ ПРЕДМЕТ ↔ ГРУППА ↔ ПРЕПОДАВАТЕЛЬ
 # =========================
 
 class SubjectGroup(models.Model):
-    """
-    Связь предмета с группой.
-    Определяет, в каких группах есть предмет.
-    """
 
     subject = models.ForeignKey(
         Subject,
@@ -136,21 +118,24 @@ class SubjectGroup(models.Model):
         related_name="group_subjects"
     )
 
+    teacher = models.ForeignKey(
+        Teacher,
+        on_delete=models.CASCADE,
+        related_name="teaching_assignments"
+    )
+
     class Meta:
         unique_together = ("subject", "group")
 
     def __str__(self):
-        return f"{self.subject} - {self.group}"
+        return f"{self.subject} - {self.group} ({self.teacher})"
 
 
 # =========================
-# ЗАНЯТИЕ (дата журнала)
+# ЗАНЯТИЕ
 # =========================
 
 class Lesson(models.Model):
-    """
-    Занятие (конкретная дата).
-    """
 
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
@@ -174,9 +159,6 @@ class Lesson(models.Model):
 # =========================
 
 class Grade(models.Model):
-    """
-    Оценка курсанта.
-    """
 
     cadet = models.ForeignKey(
         Cadet,
@@ -190,10 +172,7 @@ class Grade(models.Model):
         related_name="grades"
     )
 
-    value = models.CharField(
-        "Оценка",
-        max_length=10
-    )
+    value = models.CharField(max_length=10)
 
     class Meta:
         unique_together = ("cadet", "lesson")
@@ -203,13 +182,39 @@ class Grade(models.Model):
 
 
 # =========================
+# ИСТОРИЯ ОЦЕНОК (AUDIT)
+# =========================
+
+class GradeHistory(models.Model):
+
+    grade = models.ForeignKey(
+        Grade,
+        on_delete=models.CASCADE,
+        related_name="history"
+    )
+
+    old_value = models.CharField(max_length=10, null=True, blank=True)
+    new_value = models.CharField(max_length=10)
+
+    changed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+
+    changed_at = models.DateTimeField(auto_now_add=True)
+
+    action = models.CharField(max_length=20, default="updated")
+
+    def __str__(self):
+        return f"{self.grade} {self.old_value} → {self.new_value}"
+
+
+# =========================
 # ПОСЕЩАЕМОСТЬ
 # =========================
 
 class Attendance(models.Model):
-    """
-    Посещаемость.
-    """
 
     PRESENT = "present"
     ABSENT = "absent"
@@ -239,3 +244,22 @@ class Attendance(models.Model):
 
     class Meta:
         unique_together = ("cadet", "lesson")
+
+
+# =========================
+# ИТОГИ ПО ПРЕДМЕТУ
+# =========================
+
+class SubjectResult(models.Model):
+
+    cadet = models.ForeignKey(Cadet, on_delete=models.CASCADE)
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+
+    exam = models.CharField(max_length=10, default="_", blank=True)
+    final = models.CharField(max_length=10, default="_", blank=True)
+
+    class Meta:
+        unique_together = ("cadet", "subject")
+
+    def __str__(self):
+        return f"{self.cadet} - {self.subject}"

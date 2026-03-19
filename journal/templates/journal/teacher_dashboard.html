@@ -1,0 +1,64 @@
+{% extends "journal/base.html" %}
+
+{% block content %}
+
+<div class="card">
+
+<h2>Кабинет преподавателя</h2>
+
+<p><strong>ФИО:</strong> {{ teacher }}</p>
+
+</div>
+
+
+<!-- ========================= -->
+<!-- МОИ ПРЕДМЕТЫ -->
+<!-- ========================= -->
+
+<div class="card">
+
+<h3>Мои предметы и группы</h3>
+
+<div class="teacher-subjects">
+
+{% for item in subject_groups %}
+<div class="teacher-card">
+
+<h4>{{ item.subject.name }}</h4>
+
+<p><strong>Группа:</strong> {{ item.group.name }}</p>
+
+<a href="/journal/?subject={{ item.subject.id }}&group={{ item.group.id }}" class="btn-link">
+    Открыть журнал →
+</a>
+
+</div>
+{% endfor %}
+
+</div>
+
+</div>
+
+
+<!-- ========================= -->
+<!-- СТАТИСТИКА -->
+<!-- ========================= -->
+
+<div class="card">
+
+<h3>Посещаемость (кратко)</h3>
+
+<div class="attendance-list">
+
+{% for cadet, percent in attendance.total.items %}
+    <div class="attendance-item">
+        <span>{{ cadet }}</span>
+        <strong>{{ percent }}%</strong>
+    </div>
+{% endfor %}
+
+</div>
+
+</div>
+
+{% endblock %}

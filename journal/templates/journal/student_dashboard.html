@@ -1,0 +1,98 @@
+{% extends "journal/base.html" %}
+
+{% block content %}
+
+<div class="card">
+
+<h2>Личный кабинет</h2>
+
+<!-- ========================= -->
+<!-- ИНФО -->
+<!-- ========================= -->
+
+<div class="student-info">
+
+<p><strong>ФИО:</strong> {{ cadet }}</p>
+<p><strong>Группа:</strong> {{ cadet.group }}</p>
+
+</div>
+
+</div>
+
+
+<!-- ========================= -->
+<!-- ОЦЕНКИ -->
+<!-- ========================= -->
+
+<div class="card">
+
+<h3>Мои оценки</h3>
+
+<div class="table-wrapper">
+
+<table>
+
+<tr>
+<th>Предмет</th>
+<th>Средний балл</th>
+<th>Экзамен</th>
+<th>Итог</th>
+</tr>
+
+{% for subject in cadet.group.group_subjects.all %}
+<tr>
+
+<td>{{ subject.subject.name }}</td>
+
+<td>
+    {{ averages|get_item:subject.subject.id|default:"—" }}
+</td>
+
+<td>
+    {% with r=results|get_item:subject.subject.id %}
+        {{ r.exam|default:"—" }}
+    {% endwith %}
+</td>
+
+<td>
+    {% with r=results|get_item:subject.subject.id %}
+        {{ r.final|default:"—" }}
+    {% endwith %}
+</td>
+
+</tr>
+{% endfor %}
+
+</table>
+
+</div>
+
+</div>
+
+
+<!-- ========================= -->
+<!-- ПОСЕЩАЕМОСТЬ -->
+<!-- ========================= -->
+
+<div class="card">
+
+<h3>Посещаемость</h3>
+
+<div class="attendance-list">
+
+{% for subject, percent in attendance.by_subject.items %}
+    <div class="attendance-item">
+        <span>{{ subject }}</span>
+        <strong>{{ percent }}%</strong>
+    </div>
+{% endfor %}
+
+</div>
+
+<hr>
+
+<p><strong>Общая посещаемость:</strong> {{ attendance.total }}%</p>
+
+</div>
+
+{% endblock %}

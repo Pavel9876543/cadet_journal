@@ -58,3 +58,6 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'journal/static']
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGIN_REDIRECT_URL = "/journal/"
+LOGOUT_REDIRECT_URL = "/login/"

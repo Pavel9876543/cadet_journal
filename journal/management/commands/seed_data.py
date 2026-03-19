@@ -1,133 +1,144 @@
+"""
+Dev seed: реалистичные данные для разработки.
+"""
+
 from django.core.management.base import BaseCommand
+from django.contrib.auth.models import User
+
 from journal.models import (
     Group, Subject, SubjectGroup,
-    Teacher, Lesson, Grade, Cadet
+    Teacher, Lesson, Grade, Cadet,
+    Attendance, SubjectResult
 )
-import random
+
 from datetime import date, timedelta
+import random
 
 
 class Command(BaseCommand):
-    help = "Полное заполнение базы (группы, курсанты, занятия, оценки)"
+    help = "Заполнение тестовыми данными"
 
     def handle(self, *args, **kwargs):
 
         self.stdout.write("🧹 Очистка базы...")
 
         Grade.objects.all().delete()
+        Attendance.objects.all().delete()
         Lesson.objects.all().delete()
         SubjectGroup.objects.all().delete()
         Subject.objects.all().delete()
         Cadet.objects.all().delete()
         Group.objects.all().delete()
         Teacher.objects.all().delete()
-
-        self.stdout.write("✅ База очищена")
+        SubjectResult.objects.all().delete()
+        User.objects.exclude(is_superuser=True).delete()
 
         # =========================
         # ГРУППЫ
         # =========================
 
-        groups = {}
-        for name in ["1а", "1б", "2а", "2б", "3а", "3б"]:
-            groups[name] = Group.objects.create(name=name)
+        groups = [
+            Group.objects.create(name="1а"),
+            Group.objects.create(name="2а"),
+        ]
+
+        # =========================
+        # USERS
+        # =========================
+
+        teacher_users = [
+            User.objects.create_user(username=f"teacher{i}", password="1234")
+            for i in range(1, 4)
+        ]
+
+        student_users = [
+            User.objects.create_user(username=f"student{i}", password="1234")
+            for i in range(1, 6)
+        ]
 
         # =========================
         # ПРЕПОДАВАТЕЛИ
         # =========================
 
-        teachers = [
-            Teacher.objects.create(last_name="Иванов", first_name="Иван"),
-            Teacher.objects.create(last_name="Петров", first_name="Алексей"),
-            Teacher.objects.create(last_name="Сидоров", first_name="Максим"),
-        ]
+        teachers = []
+
+        for i, user in enumerate(teacher_users):
+            teachers.append(
+                Teacher.objects.create(
+                    last_name=f"Преподаватель{i+1}",
+                    first_name="Иван",
+                    user=user
+                )
+            )
 
         # =========================
         # ПРЕДМЕТЫ
         # =========================
 
-        subjects = {
-            "Тактика": Subject.objects.create(name="Тактика", type="grade"),
-            "Огневая подготовка": Subject.objects.create(name="Огневая подготовка", type="grade"),
-            "Физическая подготовка": Subject.objects.create(name="Физическая подготовка", type="pass_fail"),
-            "Строевая подготовка": Subject.objects.create(name="Строевая подготовка", type="pass_fail"),
-            "Военная топография": Subject.objects.create(name="Военная топография", type="grade"),
-            "Связь": Subject.objects.create(name="Связь", type="grade"),
-        }
-
-        # назначаем преподавателей
-        for subject in subjects.values():
-            subject.teachers.add(random.choice(teachers))
+        subjects = [
+            Subject.objects.create(name="Тактика", type="grade"),
+            Subject.objects.create(name="Огневая", type="grade"),
+            Subject.objects.create(name="Физо", type="pass_fail"),
+            Subject.objects.create(name="Строевая", type="pass_fail"),
+            Subject.objects.create(name="Топография", type="grade"),
+        ]
 
         # =========================
-        # СВЯЗИ ПРЕДМЕТ ↔ ГРУППА
+        # SUBJECT ↔ GROUP ↔ TEACHER
         # =========================
 
-        # общие
-        for group in groups.values():
-            for subject in [
-                subjects["Тактика"],
-                subjects["Огневая подготовка"],
-                subjects["Физическая подготовка"],
-            ]:
-                SubjectGroup.objects.create(subject=subject, group=group)
+        subject_groups = []
 
-        # частично
-        for g in ["1а", "1б", "2а", "2б"]:
-            SubjectGroup.objects.create(
-                subject=subjects["Строевая подготовка"],
-                group=groups[g]
-            )
+        for i, subject in enumerate(subjects):
+            for group in groups:
 
-        # индивидуальные
-        for g in ["2а", "2б"]:
-            SubjectGroup.objects.create(
-                subject=subjects["Военная топография"],
-                group=groups[g]
-            )
+                teacher = teachers[(i + groups.index(group)) % len(teachers)]
 
-        for g in ["3а", "3б"]:
-            SubjectGroup.objects.create(
-                subject=subjects["Связь"],
-                group=groups[g]
-            )
+                sg = SubjectGroup.objects.create(
+                    subject=subject,
+                    group=group,
+                    teacher=teacher
+                )
+
+                subject_groups.append(sg)
+                subject.teachers.add(teacher)
 
         # =========================
-        # КУРСАНТЫ
+        # КУРСАНТЫ (10)
         # =========================
 
-        last_names = ["Иванов", "Петров", "Сидоров", "Кузнецов", "Смирнов", "Попов"]
-        first_names = ["Иван", "Алексей", "Максим", "Дмитрий", "Егор", "Никита"]
+        names = [
+            "Иванов", "Петров", "Сидоров", "Кузнецов", "Смирнов",
+            "Попов", "Соколов", "Лебедев", "Козлов", "Новиков"
+        ]
 
         cadets = []
 
-        for group in groups.values():
-            for _ in range(15):  # по 15 человек
-                cadet = Cadet.objects.create(
-                    last_name=random.choice(last_names),
-                    first_name=random.choice(first_names),
-                    middle_name="",
-                    birth_date=date(2005, random.randint(1, 12), random.randint(1, 28)),
-                    phone="+79000000000",
-                    group=group
-                )
-                cadets.append(cadet)
+        for i in range(10):
+            cadet = Cadet.objects.create(
+                last_name=names[i],
+                first_name="Иван",
+                birth_date="2005-01-01",
+                phone="123",
+                group=groups[i % 2],
+                user=student_users[i] if i < len(student_users) else None
+            )
+            cadets.append(cadet)
 
         # =========================
         # ЗАНЯТИЯ
         # =========================
 
-        start_date = date(2025, 9, 1)
-
+        base_date = date(2025, 9, 1)
         lessons = []
 
-        for sg in SubjectGroup.objects.all():
-            for i in range(12):  # 12 занятий
+        for sg in subject_groups:
+            for _ in range(3):
                 lesson = Lesson.objects.create(
                     subject=sg.subject,
                     group=sg.group,
-                    teacher=random.choice(teachers),
-                    date=start_date + timedelta(days=i * 7)
+                    teacher=sg.teacher,
+                    date=base_date + timedelta(days=random.randint(0, 60))
                 )
                 lessons.append(lesson)
 
@@ -135,23 +146,19 @@ class Command(BaseCommand):
         # ОЦЕНКИ
         # =========================
 
-        grade_values = ["2", "3", "4", "5", "2-", "3-", "4-", "5+"]
-        pass_values = ["зачет", "незачет"]
+        grade_values = ["2", "3", "4", "5", "2-", "4-", "5+", "н", "_"]
+        pass_values = ["зачет", "незачет", "н"]
 
         for lesson in lessons:
 
-            group_cadets = Cadet.objects.filter(group=lesson.group)
+            group_cadets = [c for c in cadets if c.group == lesson.group]
 
             for cadet in group_cadets:
 
-                # шанс пропуска
-                if random.random() < 0.15:
-                    value = "_"
+                if lesson.subject.type == "grade":
+                    value = random.choice(grade_values)
                 else:
-                    if lesson.subject.type == "grade":
-                        value = random.choice(grade_values)
-                    else:
-                        value = random.choice(pass_values)
+                    value = random.choice(pass_values)
 
                 Grade.objects.create(
                     cadet=cadet,
@@ -159,4 +166,31 @@ class Command(BaseCommand):
                     value=value
                 )
 
-        self.stdout.write(self.style.SUCCESS("🔥 База полностью заполнена"))
+                # посещаемость
+                Attendance.objects.create(
+                    cadet=cadet,
+                    lesson=lesson,
+                    status=random.choice([
+                        Attendance.PRESENT,
+                        Attendance.ABSENT,
+                        Attendance.EXCUSED
+                    ])
+                )
+
+        # =========================
+        # ЭКЗАМЕН / ИТОГ
+        # =========================
+
+        for cadet in cadets:
+            for subject in subjects:
+
+                if random.random() < 0.7:
+
+                    SubjectResult.objects.create(
+                        cadet=cadet,
+                        subject=subject,
+                        exam=random.choice(["5", "4", "3", "н", "_"]),
+                        final=random.choice(["5", "4", "3", "зачет", "_"])
+                    )
+
+        self.stdout.write(self.style.SUCCESS("✅ Данные успешно загружены"))
