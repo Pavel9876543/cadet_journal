@@ -89,12 +89,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const groupSelect = document.getElementById("groupSelect");
     const subjectSelect = document.getElementById("subjectSelect");
 
-    if (form && groupSelect && subjectSelect && window.subjectGroups) {
+    // 🔧 фикс: безопасный fallback
+    const subjectGroups = window.subjectGroups || {};
+
+    if (form && groupSelect && subjectSelect) {
 
         function updateGroups() {
 
             const subjectId = subjectSelect.value;
-            const allowed = window.subjectGroups[subjectId] || [];
+            const allowed = subjectGroups[subjectId] || [];
 
             let hasValid = false;
 
@@ -150,7 +153,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         input.addEventListener("change", function () {
 
-            fetch("/save-grade/", {
+            // 🔧 фиксы
+            if (!this.dataset.cadet || !this.dataset.lesson) return;
+
+            let value = this.value.trim();
+            value = value === "" ? null : value;
+
+            fetch("/save_grade/", {  // 🔧 фикс URL
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -159,11 +168,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 body: JSON.stringify({
                     cadet_id: this.dataset.cadet,
                     lesson_id: this.dataset.lesson,
-                    value: this.value
+                    value: value
                 })
             })
-            .then(res => res.json())
+            .then(res => res.json().catch(() => null)) // 🔧 фикс
             .then(data => {
+
+                if (!data) {
+                    showToast("Ошибка сервера", "error");
+                    return;
+                }
 
                 if (data.error) {
                     showToast(data.error, "error");
@@ -190,7 +204,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         input.addEventListener("change", function () {
 
-            fetch("/set-result/", {
+            // 🔧 фиксы
+            if (!this.dataset.cadet || !this.dataset.subject) return;
+
+            let value = this.value.trim();
+            value = value === "" ? null : value;
+
+            fetch("/set_result/", {  // 🔧 фикс URL
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -200,11 +220,16 @@ document.addEventListener("DOMContentLoaded", () => {
                     cadet_id: this.dataset.cadet,
                     subject_id: this.dataset.subject,
                     type: this.classList.contains("exam-input") ? "exam" : "final",
-                    value: this.value
+                    value: value
                 })
             })
-            .then(res => res.json())
+            .then(res => res.json().catch(() => null)) // 🔧 фикс
             .then(data => {
+
+                if (!data) {
+                    showToast("Ошибка сервера", "error");
+                    return;
+                }
 
                 if (data.error) {
                     showToast(data.error, "error");

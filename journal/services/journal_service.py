@@ -65,7 +65,7 @@ def get_journal_data(*, user, group_id=None, subject_id=None):
         group_id = str(allowed_groups[0])
 
     # защита от подмены
-    if allowed_groups and int(group_id) not in allowed_groups:
+    if group_id and allowed_groups and int(group_id) not in allowed_groups:
         group_id = str(allowed_groups[0])
 
     # =========================
@@ -100,11 +100,21 @@ def get_journal_data(*, user, group_id=None, subject_id=None):
 
     averages = {}
 
+    subject = None
+    if subject_id:
+        try:
+            subject = Subject.objects.get(id=subject_id)
+        except Subject.DoesNotExist:
+            subject = None
+
     for cadet in cadets:
-        avg = calculate_average_for_cadet_subject(
-            cadet,
-            Subject.objects.get(id=subject_id)
-        )
+        if subject:
+            avg = calculate_average_for_cadet_subject(
+                cadet,
+                subject
+            )
+        else:
+            avg = None
         averages[cadet.id] = avg
 
     # =========================
@@ -144,7 +154,7 @@ def get_journal_data(*, user, group_id=None, subject_id=None):
         "journal": journal,
         "averages": averages,
         "results": results,
-        "subject_id": str(subject_id),
-        "group_id": str(group_id),
+        "subject_id": str(subject_id) if subject_id else "",
+        "group_id": str(group_id) if group_id else "",
         "subject_groups": subject_groups,
     }

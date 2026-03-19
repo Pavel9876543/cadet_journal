@@ -22,6 +22,10 @@ def role_required(allowed_roles):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
 
+            # 🔧 фикс: защита от неавторизованного пользователя
+            if not request.user or not request.user.is_authenticated:
+                raise PermissionDenied("Требуется авторизация")
+
             role = get_user_role(request.user)
 
             if role not in allowed_roles:
@@ -42,6 +46,10 @@ def teacher_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
 
+        # 🔧 фикс
+        if not request.user or not request.user.is_authenticated:
+            raise PermissionDenied("Требуется авторизация")
+
         role = get_user_role(request.user)
 
         if role != Role.TEACHER:
@@ -60,6 +68,10 @@ def student_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
 
+        # 🔧 фикс
+        if not request.user or not request.user.is_authenticated:
+            raise PermissionDenied("Требуется авторизация")
+
         role = get_user_role(request.user)
 
         if role != Role.STUDENT:
@@ -77,6 +89,10 @@ def admin_required(view_func):
 
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
+
+        # 🔧 фикс
+        if not request.user or not request.user.is_authenticated:
+            raise PermissionDenied("Требуется авторизация")
 
         role = get_user_role(request.user)
 

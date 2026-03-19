@@ -103,12 +103,14 @@ maxlength="5"
 <!-- ========================= -->
 
 <td>
+{% with res=results|get_item:cadet.id %}
 <input
 class="exam-input"
 data-cadet="{{ cadet.id }}"
 data-subject="{{ subject_id }}"
-value="{{ results|get_item:cadet.id.exam|default:'' }}"
+value="{{ res.exam|default:'' }}"
 />
+{% endwith %}
 </td>
 
 
@@ -117,12 +119,14 @@ value="{{ results|get_item:cadet.id.exam|default:'' }}"
 <!-- ========================= -->
 
 <td>
+{% with res=results|get_item:cadet.id %}
 <input
 class="final-input"
 data-cadet="{{ cadet.id }}"
 data-subject="{{ subject_id }}"
-value="{{ results|get_item:cadet.id.final|default:'' }}"
+value="{{ res.final|default:'' }}"
 />
+{% endwith %}
 </td>
 
 </tr>

@@ -3,6 +3,7 @@ Views приложения (тонкий слой).
 """
 
 import json
+from json import JSONDecodeError
 
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout
@@ -112,6 +113,7 @@ def student_dashboard(request):
         "attendance": attendance
     })
 
+
 @login_required
 @role_required([Role.TEACHER])
 def teacher_dashboard(request):
@@ -165,14 +167,30 @@ def save_grade(request):
     try:
         data = json.loads(request.body)
 
+        cadet_id = data.get("cadet_id")
+        lesson_id = data.get("lesson_id")
+        value = data.get("value")
+
+        if cadet_id is not None:
+            cadet_id = int(cadet_id)
+
+        if lesson_id is not None:
+            lesson_id = int(lesson_id)
+
+        if value is not None:
+            value = int(value)
+
         set_grade(
             user=request.user,
-            cadet_id=data.get("cadet_id"),
-            lesson_id=data.get("lesson_id"),
-            value=data.get("value"),
+            cadet_id=cadet_id,
+            lesson_id=lesson_id,
+            value=value,
         )
 
         return JsonResponse({"status": "ok"})
+
+    except (JSONDecodeError, TypeError, ValueError):
+        return JsonResponse({"error": "Неверный формат данных"}, status=400)
 
     except ValidationError as e:
         return JsonResponse({"error": str(e)}, status=400)
@@ -195,20 +213,36 @@ def set_result(request):
     try:
         data = json.loads(request.body)
 
+        cadet_id = data.get("cadet_id")
+        subject_id = data.get("subject_id")
+        value = data.get("value")
+
+        if cadet_id is not None:
+            cadet_id = int(cadet_id)
+
+        if subject_id is not None:
+            subject_id = int(subject_id)
+
+        if value is not None:
+            value = int(value)
+
         kwargs = {
             "user": request.user,
-            "cadet_id": data.get("cadet_id"),
-            "subject_id": data.get("subject_id"),
+            "cadet_id": cadet_id,
+            "subject_id": subject_id,
         }
 
         if data.get("type") == "exam":
-            kwargs["exam"] = data.get("value")
+            kwargs["exam"] = value
         else:
-            kwargs["final"] = data.get("value")
+            kwargs["final"] = value
 
         set_subject_result(**kwargs)
 
         return JsonResponse({"status": "ok"})
+
+    except (JSONDecodeError, TypeError, ValueError):
+        return JsonResponse({"error": "Неверный формат данных"}, status=400)
 
     except ValidationError as e:
         return JsonResponse({"error": str(e)}, status=400)
@@ -249,10 +283,18 @@ def add_grade(request):
 
     if request.method == "POST" and form.is_valid():
 
+        lesson_id = request.POST.get("lesson_id")
+
+        if lesson_id is not None:
+            try:
+                lesson_id = int(lesson_id)
+            except ValueError:
+                return redirect("journal")
+
         set_grade(
             user=request.user,
             cadet_id=form.cleaned_data["cadet"].id,
-            lesson_id=request.POST.get("lesson_id"),
+            lesson_id=lesson_id,
             value=form.cleaned_data["value"],
         )
 

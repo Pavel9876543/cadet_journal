@@ -6,7 +6,7 @@ import re
 
 from django.core.exceptions import ValidationError
 
-from journal.models import Grade, GradeHistory, Lesson, SubjectResult, Cadet
+from journal.models import Grade, GradeHistory, Lesson, SubjectResult, Cadet, Subject
 from journal.services.auth_service import (
     check_teacher_access_to_lesson,
     check_teacher_access_to_cadet,
@@ -37,7 +37,7 @@ def normalize_value(value: str) -> str:
     if value is None:
         return "_"
 
-    value = value.strip().lower()
+    value = str(value).strip().lower()
 
     if value == "":
         return "_"
@@ -49,6 +49,9 @@ def validate_value(value: str):
     """
     Проверка допустимого значения оценки.
     """
+
+    if value is None:
+        raise ValidationError("Пустое значение оценки")
 
     if not re.match(r"^[0-9+\-а-яА-Я_]+$", value):
         raise ValidationError("Недопустимые символы")
@@ -66,8 +69,15 @@ def set_grade(*, user, cadet_id, lesson_id, value):
     Создание или обновление оценки.
     """
 
-    lesson = Lesson.objects.select_related("subject", "group").get(id=lesson_id)
-    cadet = Cadet.objects.get(id=cadet_id)
+    try:
+        lesson = Lesson.objects.select_related("subject", "group").get(id=lesson_id)
+    except Lesson.DoesNotExist:
+        raise ValidationError("Занятие не найдено")
+
+    try:
+        cadet = Cadet.objects.get(id=cadet_id)
+    except Cadet.DoesNotExist:
+        raise ValidationError("Кадет не найден")
 
     # 🔐 безопасность
     check_teacher_access_to_lesson(user, lesson)
@@ -141,16 +151,22 @@ def calculate_student_average(cadet):
     Общий средний балл по всем предметам.
     """
 
-    subjects = set(
+    subject_ids = set(
         Grade.objects.filter(cadet=cadet)
         .values_list("lesson__subject", flat=True)
     )
 
     averages = []
 
-    for subject_id in subjects:
-        avg = calculate_average_for_cadet_subject(cadet, subject_id)
-        if avg:
+    for subject_id in subject_ids:
+        try:
+            subject = Subject.objects.get(id=subject_id)
+        except Subject.DoesNotExist:
+            continue
+
+        avg = calculate_average_for_cadet_subject(cadet, subject)
+
+        if avg is not None:
             averages.append(avg)
 
     if not averages:
@@ -168,12 +184,17 @@ def set_subject_result(*, user, cadet_id, subject_id, exam=None, final=None):
     Установка экзамена и итоговой оценки.
     """
 
-    cadet = Cadet.objects.get(id=cadet_id)
+    try:
+        cadet = Cadet.objects.get(id=cadet_id)
+    except Cadet.DoesNotExist:
+        raise ValidationError("Кадет не найден")
 
-    # 🔐 доступ (через предмет)
     from journal.models import Subject, SubjectGroup
 
-    subject = Subject.objects.get(id=subject_id)
+    try:
+        subject = Subject.objects.get(id=subject_id)
+    except Subject.DoesNotExist:
+        raise ValidationError("Предмет не найден")
 
     role = get_user_role(user)
 

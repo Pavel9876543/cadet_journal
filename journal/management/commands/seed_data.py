@@ -133,14 +133,24 @@ class Command(BaseCommand):
         lessons = []
 
         for sg in subject_groups:
+
+            used_days = set()  # 🔧 фикс
+
             for _ in range(3):
+
+                # 🔧 гарантируем уникальный день
+                while True:
+                    day_offset = random.randint(0, 60)
+                    if day_offset not in used_days:
+                        used_days.add(day_offset)
+                        break
+
                 lesson = Lesson.objects.create(
                     subject=sg.subject,
                     group=sg.group,
                     teacher=sg.teacher,
-                    date=base_date + timedelta(days=random.randint(0, 60))
+                    date=base_date + timedelta(days=day_offset)
                 )
-                lessons.append(lesson)
 
         # =========================
         # ОЦЕНКИ
@@ -188,9 +198,8 @@ class Command(BaseCommand):
 
                     SubjectResult.objects.create(
                         cadet=cadet,
-                        subject=subject,
-                        exam=random.choice(["5", "4", "3", "н", "_"]),
-                        final=random.choice(["5", "4", "3", "зачет", "_"])
+                        subject=subject
+                        # 🔧 экзамен и итог НЕ заполняем
                     )
 
         self.stdout.write(self.style.SUCCESS("✅ Данные успешно загружены"))

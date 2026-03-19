@@ -61,6 +61,10 @@ def check_teacher_access_to_lesson(user, lesson):
     if role != Role.TEACHER:
         raise PermissionDenied("Нет доступа")
 
+    # 🔧 фикс: защита от отсутствия teacher
+    if not hasattr(user, "teacher"):
+        raise PermissionDenied("Профиль преподавателя не найден")
+
     teacher = user.teacher
 
     allowed = SubjectGroup.objects.filter(
@@ -85,6 +89,10 @@ def check_teacher_access_to_cadet(user, cadet, lesson=None):
 
     if role != Role.TEACHER:
         raise PermissionDenied("Нет доступа")
+
+    # 🔧 фикс: защита от отсутствия teacher
+    if not hasattr(user, "teacher"):
+        raise PermissionDenied("Профиль преподавателя не найден")
 
     teacher = user.teacher
 
@@ -128,6 +136,10 @@ def check_student_access(user, cadet):
 
     if role != Role.STUDENT:
         raise PermissionDenied("Нет доступа")
+
+    # 🔧 фикс: защита от отсутствия cadet
+    if not hasattr(user, "cadet"):
+        raise PermissionDenied("Профиль курсанта не найден")
 
     if user.cadet.id != cadet.id:
         raise PermissionDenied("Можно смотреть только свои данные")
